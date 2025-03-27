@@ -1,0 +1,6 @@
+ktor:
+  application:
+    modules:
+      - com.github.SleekNekro.ApplicationKt.module
+  deployment:
+    port: 9292
