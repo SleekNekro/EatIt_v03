@@ -23,7 +23,7 @@ fun Application.configureSerialization() {
 }
 
 object LocalDateTimeSerializer : KSerializer<LocalDateTime> {
-    private val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+    private val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss")
 
     override val descriptor = PrimitiveSerialDescriptor("LocalDateTime", kotlinx.serialization.descriptors.PrimitiveKind.STRING)
 

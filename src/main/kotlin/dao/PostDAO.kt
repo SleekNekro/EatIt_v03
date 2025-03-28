@@ -17,7 +17,7 @@ object PostTable : IntIdTable() {
     val userId = reference("user_id", UserTable)
     val createdAt = datetime(name = "created_at")
     val updatedAt = datetime(name = "updated_at")
-    val imageUrl = varchar("imageUrl", 255)
+    val imageUrl = varchar("imageUrl", 255).nullable()
 }
 
 class PostDAO (id: EntityID<Int>) : IntEntity(id), ConvertibleToDataClass<PostData> {

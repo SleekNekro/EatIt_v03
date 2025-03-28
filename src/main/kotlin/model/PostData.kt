@@ -15,5 +15,5 @@ data class PostData(
     val createdAt: LocalDateTime,
     @Serializable(with = LocalDateTimeSerializer::class)
     val updatedAt: LocalDateTime,
-    val imageUrl: String
+    val imageUrl: String?
 )
