@@ -1,6 +1,7 @@
 package com.github.SleekNekro.dao
 
 
+import com.github.SleekNekro.model.CommentData
 import com.github.SleekNekro.model.PostData
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
@@ -26,13 +27,15 @@ class PostDAO (id: EntityID<Int>) : IntEntity(id), ConvertibleToDataClass<PostDa
             content: String,
             imageUrl: String
         ): PostDAO {
-            return transaction { PostDAO.new {
-                this.title = title
-                this.content = content
-                this.createdAt = createdAt
-                this.updatedAt = updatedAt
-                this.imageUrl = imageUrl
-            } }
+            return transaction {
+                PostDAO.new {
+                    this.title = title
+                    this.content = content
+                    this.createdAt = LocalDateTime.now()
+                    this.updatedAt = LocalDateTime.now()
+                    this.imageUrl = imageUrl
+                }
+            }
         }
 
         fun getAllPosts(): List<PostDAO> {
@@ -79,6 +82,7 @@ class PostDAO (id: EntityID<Int>) : IntEntity(id), ConvertibleToDataClass<PostDa
     var createdAt by PostTable.createdAt
     var updatedAt by PostTable.updatedAt
     var imageUrl by PostTable.imageUrl
+
     override fun toDataClass(): PostData {
         return PostData(
             id = id.value,

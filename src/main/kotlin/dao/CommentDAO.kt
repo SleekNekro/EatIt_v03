@@ -6,6 +6,7 @@ import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.javatime.datetime
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 
 object CommentTable : IntIdTable() {
@@ -17,12 +18,61 @@ object CommentTable : IntIdTable() {
 }
 class CommentDAO(id: EntityID<Int>) : IntEntity(id),ConvertibleToDataClass<CommentData> {
     companion object : IntEntityClass<CommentDAO>(CommentTable){
+        fun createComment(
+            content: String,
+            userID: EntityID<Int>,
+            postID: EntityID<Int>
+        ): Boolean{
+            return transaction {
+                CommentDAO.new {
+                    this.content= content
+                    this.userId= userID
+                    this.postId = postID
+                    this.createdAt = LocalDateTime.now()
+                    this.updatedAt = LocalDateTime.now()
+                }
+                true
+            }
+        }
+
+        fun getCommentsByPostID(id: Int): List<CommentDAO> {
+            return transaction {
+                CommentDAO.find{ CommentTable.postId eq id }.toList()
+            }
+        }
+
+        fun getCommentById(id: Int): CommentDAO? {
+            return transaction {
+                CommentDAO.findById(id)
+            }
+        }
+
+        fun updateComment(
+            id: Int,
+            newContent: String
+        ): Boolean{
+            return transaction {
+                val com= CommentDAO.findById(id) ?: return@transaction false
+                newContent?.let { com.content= newContent }
+                true
+            }
+        }
+
+        fun deleteComment(id: Int): Boolean{
+            return transaction {
+                val com =CommentDAO.findById(id) ?: return@transaction false
+                com.delete()
+                true
+            }
+        }
 
     }
 
     var content by CommentTable.content
     var userId by CommentTable.userId
     var postId by CommentTable.postId
+    var createdAt by CommentTable.createdAt
+    var updatedAt by CommentTable.updatedAt
 
 
     override fun toDataClass(): CommentData {

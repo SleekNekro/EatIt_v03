@@ -1,7 +1,6 @@
 package com.github.SleekNekro
 
 import com.github.SleekNekro.dao.*
-import com.github.SleekNekro.model.PostData
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -101,6 +100,82 @@ fun Application.configureRouting() {
         route("/post"){
             get {
                 val post = PostDAO.getAllPosts()
+                call.respond(post.map { it.toDataClass() })
+            }
+
+            put {
+                val title = call.receiveParameters()["title"].toString()
+                val content = call.receiveParameters()["content"].toString()
+                val imageUrl = call.receiveParameters()["imageUrl"].toString()
+
+                if (title.isNullOrBlank()){
+                    call.respondText("Missing 'title'", status = HttpStatusCode.BadRequest)
+                    return@put
+                }
+
+                val newPost= PostDAO.createPost(title,content,imageUrl)
+                call.respond(newPost.toDataClass())
+            }
+
+            patch("/{id}") {
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
+                    return@patch
+                }
+
+                val param= call.receiveParameters()
+                val title = param["title"]
+                val content = param["content"].toString()
+                val imageUrl = param["imageUrl"].toString()
+
+                val updatedPost= PostDAO.updatePost(id = id, newTitle = title, newContent = content, newImageUrl = imageUrl)
+                call.respond(updatedPost)
+
+                if (updatedPost){
+                    call.respondText("User updated successfully")
+                }else call.respondText("User not found", status = HttpStatusCode.NotFound)
+
+            }
+
+            get("/{id}") {
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
+                    return@get
+                }
+
+                val post = PostDAO.getPostById(id)?.toDataClass() // Properly call toDataClass()
+                if (post == null) {
+                    call.respondText("User not found", status = HttpStatusCode.NotFound)
+                } else {
+                    call.respond(post) // Respond directly with the data class
+                }
+            }
+            get("/all/{id}"){
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
+                    return@get
+                }
+                val post = PostDAO.getAllPostsOfUser(id).map { it.toDataClass() }
+                if (post.isEmpty()){
+                    call.respondText("User no Posts", status = HttpStatusCode.NotFound)
+                }
+                call.respond(post)
+            }
+
+            delete("/{id}") {
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
+                    return@delete
+                }
+                val delete = PostDAO.deletePostById(id) ?: return@delete
+                if (delete){
+                    call.respondText("Post deleted successfully")
+                }else call.respondText("User not found", status = HttpStatusCode.NotFound)
+
             }
         }
     }
