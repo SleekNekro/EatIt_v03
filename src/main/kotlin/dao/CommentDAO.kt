@@ -20,18 +20,21 @@ class CommentDAO(id: EntityID<Int>) : IntEntity(id),ConvertibleToDataClass<Comme
     companion object : IntEntityClass<CommentDAO>(CommentTable){
         fun createComment(
             content: String,
-            userID: EntityID<Int>,
-            postID: EntityID<Int>
         ): Boolean{
             return transaction {
                 CommentDAO.new {
                     this.content= content
-                    this.userId= userID
-                    this.postId = postID
+                    this.userId= userId
+                    this.postId = postId
                     this.createdAt = LocalDateTime.now()
                     this.updatedAt = LocalDateTime.now()
                 }
                 true
+            }
+        }
+        fun getAllComments(): List<CommentDAO> {
+            return transaction {
+                CommentDAO.all().toList()
             }
         }
 
@@ -49,7 +52,7 @@ class CommentDAO(id: EntityID<Int>) : IntEntity(id),ConvertibleToDataClass<Comme
 
         fun updateComment(
             id: Int,
-            newContent: String
+            newContent: String? = null
         ): Boolean{
             return transaction {
                 val com= CommentDAO.findById(id) ?: return@transaction false

@@ -28,10 +28,10 @@ object LocalDateTimeSerializer : KSerializer<LocalDateTime> {
     override val descriptor = PrimitiveSerialDescriptor("LocalDateTime", kotlinx.serialization.descriptors.PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: LocalDateTime) {
-        encoder.encodeString(value.format(formatter)) // Serializa LocalDateTime como cadena ISO-8601
+        encoder.encodeString(value.format(formatter))
     }
 
     override fun deserialize(decoder: Decoder): LocalDateTime {
-        return LocalDateTime.parse(decoder.decodeString(), formatter) // Deserializa ISO-8601 a LocalDateTime
+        return LocalDateTime.parse(decoder.decodeString(), formatter)
     }
 }

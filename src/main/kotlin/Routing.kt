@@ -178,5 +178,67 @@ fun Application.configureRouting() {
 
             }
         }
+        route("/comment"){
+            get {
+                val com = CommentDAO.getAllComments()
+                call.respond(com.map { it.toDataClass() })
+            }
+            put("/{id}") {
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
+                }
+                val content = call.receiveParameters()["content"].toString()
+                val com = CommentDAO.createComment(content)
+                call.respond(com)
+            }
+            patch("/{id}"){
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
+                    return@patch
+                }
+                val content= call.receiveParameters()["content"].toString()
+                val com = CommentDAO.updateComment(id, newContent = content)
+                call.respond(com)
+
+                if (com){
+                    call.respondText("Comment updated successfully")
+                }else call.respondText("User not found", status = HttpStatusCode.NotFound)
+            }
+            get("/{id}"){
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
+                    return@get
+                }
+                val comment = CommentDAO.getCommentById(id)?.toDataClass() ?: return@get
+                call.respond(comment)
+            }
+            get("/all/{id}") {
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
+                    return@get
+                }
+                val com = CommentDAO.getCommentsByPostID(id).map { it.toDataClass() }
+                if (com.isEmpty()){
+                    call.respondText("Comment not found", status = HttpStatusCode.NotFound)
+                }
+                call.respond(com)
+            }
+            delete("/{id}") {
+                val id = call.parameters["id"]?.toIntOrNull()
+                if (id == null) {
+                    call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
+                    return@delete
+                }
+
+                val delete = CommentDAO.deleteComment(id)?: return@delete
+                if (delete){
+                    call.respondText("Comment deleted succesfully")
+                }else call.respondText("Comment not found", status = HttpStatusCode.NotFound)
+            }
+        }
     }
 }
