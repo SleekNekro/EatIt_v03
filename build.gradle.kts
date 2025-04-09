@@ -59,7 +59,8 @@ dependencies {
 
     // Logging: Librerías para el registro de eventos y depuración
     implementation("ch.qos.logback:logback-classic:$logback_version") // Logback para gestión robusta de logs
-    //implementation("io.ktor:ktor-server-call-logging:$ktor_version")
+    //Thymeleaf
+    implementation("io.ktor:ktor-server-thymeleaf:$ktor_version")
 
 
     // Testing: Dependencias para escribir y ejecutar pruebas de tu aplicación
