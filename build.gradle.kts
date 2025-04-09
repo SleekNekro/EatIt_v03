@@ -6,7 +6,7 @@ val ktor_version: String by project
 
 plugins {
     kotlin("jvm") version "2.1.20"
-    id("io.ktor.plugin") version "3.1.1"
+    id("io.ktor.plugin") version "3.1.2"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.1.20"
 }
 
@@ -22,6 +22,17 @@ application {
 
 repositories {
     mavenCentral()
+}
+ktor{
+    docker{
+        externalRegistry.set(
+            io.ktor.plugin.features.DockerImageRegistry.dockerHub(
+                appName = provider { "ktor-server" },
+                username = providers.environmentVariable("DOCKER_HUB_USERNAME"),
+                password = providers.environmentVariable("DOCKER_HUB_PASSWORD"),
+            )
+        )
+    }
 }
 
 dependencies {
