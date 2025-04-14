@@ -1,8 +1,8 @@
 package com.github.SleekNekro.dao
 
 
-import com.github.SleekNekro.model.CommentData
 import com.github.SleekNekro.model.PostData
+import com.github.SleekNekro.util.ConvertibleToDataClass
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID

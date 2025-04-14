@@ -3,6 +3,7 @@ val h2_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
 val ktor_version: String by project
+val commons_codec_version: String by project
 
 plugins {
     kotlin("jvm") version "2.1.20"
@@ -55,12 +56,16 @@ dependencies {
 
 
     // Seguridad: Plugins de autenticación y autorización para proteger endpoints
+    implementation("io.ktor:ktor-server-auth-jwt-jvm:3.1.2")
     implementation("io.ktor:ktor-server-auth:$ktor_version") // Autenticación para Ktor
+    implementation("commons-codec:commons-codec:$commons_codec_version")
+    implementation("org.mindrot:jbcrypt:0.4")
 
     // Logging: Librerías para el registro de eventos y depuración
     implementation("ch.qos.logback:logback-classic:$logback_version") // Logback para gestión robusta de logs
     //Thymeleaf
     implementation("io.ktor:ktor-server-thymeleaf:$ktor_version")
+    implementation("io.ktor:ktor-server-auth-jwt:3.1.2")
 
 
     // Testing: Dependencias para escribir y ejecutar pruebas de tu aplicación

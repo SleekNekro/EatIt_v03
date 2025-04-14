@@ -1,6 +1,6 @@
 package com.github.SleekNekro.model
 
-import com.github.SleekNekro.LocalDateTimeSerializer
+import com.github.SleekNekro.util.LocalDateTimeSerializer
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDateTime

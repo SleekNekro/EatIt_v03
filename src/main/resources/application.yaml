@@ -4,3 +4,8 @@ ktor:
       - com.github.SleekNekro.ApplicationKt.module
   deployment:
     port: 9292
+jwt:
+  domain: "https://jwt-provider-domain/"
+  audience: "jwt-audience"
+  realm: "Acceso a la API"
+  secret: "salypimienta"

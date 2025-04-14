@@ -11,5 +11,4 @@ fun Application.configureDatabases() {
         user = "root",
         password = "1234"
     )
-
 }

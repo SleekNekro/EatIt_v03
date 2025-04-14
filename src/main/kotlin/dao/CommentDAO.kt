@@ -1,6 +1,7 @@
 package com.github.SleekNekro.dao
 
 import com.github.SleekNekro.model.CommentData
+import com.github.SleekNekro.util.ConvertibleToDataClass
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -16,7 +17,7 @@ object CommentTable : IntIdTable() {
     val createdAt = datetime(name = "created_at")
     val updatedAt = datetime(name = "updated_at")
 }
-class CommentDAO(id: EntityID<Int>) : IntEntity(id),ConvertibleToDataClass<CommentData> {
+class CommentDAO(id: EntityID<Int>) : IntEntity(id), ConvertibleToDataClass<CommentData> {
     companion object : IntEntityClass<CommentDAO>(CommentTable){
         fun createComment(
             content: String,

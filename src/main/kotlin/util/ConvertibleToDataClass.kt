@@ -1,4 +1,4 @@
-package com.github.SleekNekro.dao
+package com.github.SleekNekro.util
 
 fun interface ConvertibleToDataClass<T> {
     fun toDataClass(): T

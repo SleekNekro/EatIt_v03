@@ -1,16 +1,20 @@
 package com.github.SleekNekro.dao
 
+import com.github.SleekNekro.model.Role
 import com.github.SleekNekro.model.UserData
+import com.github.SleekNekro.util.ConvertibleToDataClass
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object UserTable : IntIdTable("users") {
     val name = varchar("name", 100)
     val email = varchar("email", 100)
     val password = varchar("password", 100)
+    val role = varchar("role", length = 50).default("user")
 }
 
 class UserDAO(id: EntityID<Int>) : IntEntity(id), ConvertibleToDataClass<UserData> {
@@ -26,6 +30,17 @@ class UserDAO(id: EntityID<Int>) : IntEntity(id), ConvertibleToDataClass<UserDat
                 this.password = passw
             } }
         }
+        fun registerUser(user: UserData): UserData {
+            val generatedId = transaction {
+                UserTable.insert {
+                    it[name] = user.name
+                    it[email] = user.email
+                    it[password] = user.password
+                } get UserTable.id
+            }
+
+            return user.copy(id = generatedId.value)
+        }
 
         fun getAllUsers(): List<UserDAO> {
             return transaction { UserDAO.all().toList() }
@@ -39,6 +54,13 @@ class UserDAO(id: EntityID<Int>) : IntEntity(id), ConvertibleToDataClass<UserDat
             return transaction {
                 UserDAO.find {
                     UserTable.email eq email
+                }.singleOrNull()
+            }
+        }
+        fun getUserByUsername(username: String): UserDAO? {
+            return transaction {
+                UserDAO.find{
+                    UserTable.name eq username
                 }.singleOrNull()
             }
         }
@@ -70,6 +92,7 @@ class UserDAO(id: EntityID<Int>) : IntEntity(id), ConvertibleToDataClass<UserDat
     var name by UserTable.name
     var email by UserTable.email
     var password by UserTable.password
+    var role by UserTable.role
 
     override fun toDataClass(): UserData {
         return UserData(
@@ -77,6 +100,7 @@ class UserDAO(id: EntityID<Int>) : IntEntity(id), ConvertibleToDataClass<UserDat
             name = this.name,
             email = this.email,
             password = this.password,
+            role = Role.valueOf(this.role.uppercase())
         )
     }
 }
