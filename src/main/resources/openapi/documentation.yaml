@@ -1,0 +1,56 @@
+openapi: "3.1.0"
+info:
+  title: "EatIt_v03 API"
+  description: "EatIt_v03 API"
+  version: "1.0.0"
+servers:
+- url: "https://EatIt_v03"
+paths:
+  /:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Hello World!"
+  /user:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/User"
+              examples:
+                Example#1:
+                  description: ""
+                  value:
+                  - id: 1
+                    name: "Herbert"
+                  - id: 2
+                    name: "Marc"
+                  - id: 3
+                    name: "Michael"
+components:
+  schemas:
+    User:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        name:
+          type: "string"
+      required:
+      - "id"
+      - "name"

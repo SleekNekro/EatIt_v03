@@ -1,54 +1,129 @@
-/* General styles */
-body {
-    font-family: Arial, sans-serif;
+html, body {
+    height: 100%;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
 }
 
-/* Header styles */
+body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f9f9f9; /* Fondo más claro */
+}
+
 header {
-    background-color: #0078d7;
+    background-color: #653158;
     color: white;
     padding: 20px;
-    text-align: center;
 }
 
-/* Main content styles */
-main {
+/* Estilo de las tarjetas */
+section {
+    margin: 20px auto;
     padding: 20px;
-    text-align: center;
+    width: 80%;
+    max-width: 800px;
+    background-color: #ffffff; /* Fondo claro */
+    color: #333; /* Texto oscuro para contraste */
+    border-radius: 15px; /* Bordes redondeados */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
 }
 
-h1, h2 {
-    margin: 0 0 20px 0;
+section h2 {
+    color: #653158; /* Título en color acorde */
+    margin-bottom: 15px;
 }
 
-p {
-    margin: 0 0 20px 0;
+section p {
+    color: #555; /* Texto gris oscuro */
+    line-height: 1.8;
+    font-size: 1.1rem;
 }
 
-button {
-    background-color: #0078d7;
-    color: white;
-    border: none;
+/* Botones */
+.button {
+    display: inline-block;
     padding: 10px 20px;
-    cursor: pointer;
-    font-size: 1em;
+    color: rgb(255, 255, 255);
+    text-decoration: none;
+    border-radius: 15px; /* Bordes redondeados */
+    margin: 10px;
+    transition: transform 0.3s ease, background-color 0.3s ease;
 }
 
-button:hover {
-    background-color: #005a9e;
+.button:hover {
+    transform: scale(1.1);
+    background-color: #ff7f89;
 }
 
-/* Footer styles */
-footer {
-    background-color: #333;
-    color: white;
-    padding: 10px;
-    position: absolute;
-    bottom: 0;
-    width: 100%;
+.android {
+    background-color: #fb96a6;
+}
+
+.ios {
+    background-color: #f75c76;
+}
+
+/* About Us refinado */
+.about-us {
     text-align: center;
+}
+
+.about-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.about-image {
+    max-width: 300px;
+    border-radius: 15px; /* Bordes más redondeados */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.about-content p {
+    font-size: 1.2rem;
+    color: #555;
+    margin: 0;
+    max-width: 500px;
+    line-height: 1.8;
+}
+
+/* Footer sin tarjeta */
+footer {
+    background-color: #653158;
+    color: white;
+    padding: 20px 0;
+    text-align: center;
+}
+
+footer .contact h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: #ffc4d6;
+}
+
+footer .contact ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+footer .contact ul li {
+    margin: 5px 0;
+    font-size: 1rem;
+}
+
+footer .contact ul li a {
+    color: #ffc4d6;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+footer .contact ul li a:hover {
+    color: #ff7f89;
 }
