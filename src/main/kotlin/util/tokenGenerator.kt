@@ -2,7 +2,7 @@ package com.github.SleekNekro.util
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.github.SleekNekro.model.UserData
+import com.github.SleekNekro.data.UserData
 import java.util.*
 
 fun generateToken(

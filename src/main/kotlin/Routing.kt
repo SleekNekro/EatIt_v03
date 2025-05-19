@@ -1,9 +1,8 @@
 package com.github.SleekNekro
 
-import com.github.SleekNekro.dao.*
-import com.github.SleekNekro.dao.UserDAO.Companion.getUserByEmail
-import com.github.SleekNekro.dao.UserDAO.Companion.getUserByUsername
-import com.github.SleekNekro.model.UserData
+import com.github.SleekNekro.data.DAO.CommentDAO
+import com.github.SleekNekro.data.DAO.RecipeDAO
+import com.github.SleekNekro.data.DAO.UserDAO
 import com.github.SleekNekro.model.request.LoginRequest
 import com.github.SleekNekro.model.request.RegisterRequest
 import com.github.SleekNekro.util.generateToken
@@ -27,273 +26,376 @@ fun Application.configureRouting() {
             put("/register") {
                 val registerRequest = call.receive<RegisterRequest>()
 
-                if (getUserByEmail(registerRequest.email) != null) {
-                    call.respond(HttpStatusCode.Conflict, "${registerRequest.email} already used")
+                // Validación del email
+                if (!registerRequest.email.contains("@")) {
+                    call.respond(HttpStatusCode.BadRequest, "Formato de correo inválido")
                     return@put
                 }
 
+                // Validación de la contraseña
+                if (registerRequest.password.length < 6) {
+                    call.respond(HttpStatusCode.BadRequest, "La contraseña debe tener al menos 6 caracteres")
+                    return@put
+                }
+
+                // Verificar si el correo ya está registrado
+                if (UserDAO.getUserByEmail(registerRequest.email) != null) {
+                    call.respond(HttpStatusCode.Conflict, "${registerRequest.email} ya está en uso")
+                    return@put
+                }
+
+                // Encriptar la contraseña antes de guardarla
                 val hashedPassword = hashPassword(registerRequest.password)
 
-                val user = UserData(
-                    name = registerRequest.username,
+                // Crear un nuevo usuario
+                val user = UserDAO.createUser(
+                    username = registerRequest.username,
                     email = registerRequest.email,
-                    password = hashedPassword
+                    password = hashedPassword,
+                    profilePic = null
                 )
 
-                UserDAO.registerUser(user)
-                call.respond(HttpStatusCode.Created, "${registerRequest.username} registered successfully")
+                call.respond(HttpStatusCode.Created, mapOf("message" to "${user.username} registrado correctamente"))
             }
+
             post("/login") {
                 val loginRequest = call.receive<LoginRequest>()
 
-                val user = getUserByUsername(loginRequest.username)?.toDataClass()
+                // Buscar usuario por email en lugar de username
+                val user = UserDAO.getUserByEmail(loginRequest.email)?.toDataClass()
 
                 if (user == null || !verifyPassword(loginRequest.password, user.password)) {
-                    call.respond(
-                        HttpStatusCode.Unauthorized,
-                        mapOf("error" to "Email o contraseña inválidos")
-                    )
+                    call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Email o contraseña inválidos"))
                     return@post
                 }
 
+                // Generar el token JWT
                 val token = generateToken(user, jwtConfig.secret, jwtConfig.domain, jwtConfig.audience)
 
-                call.respond(HttpStatusCode.OK, mapOf("token" to token))
+                call.respond(
+                    HttpStatusCode.OK, mapOf(
+                        "token" to token,
+                        "user" to mapOf(
+                            "id" to user.id,
+                            "username" to user.username,
+                            "email" to user.email,
+                            "profilePic" to user.profilePic,
+                            "followers" to user.followers
+                        )
+                    )
+                )
             }
 
-        }
-        authenticate("auth-jwt") {
-            route("/user") {
-                // Get all users
-                get {
-                    val users = UserDAO.getAllUsers() // Directly call the companion object method
-                    call.respond(users.map { it.toDataClass() }) // Convert DAO to data class
-                }
 
-                // Get a single user by ID
-                get("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@get
+            authenticate("auth-jwt") {
+                route("/user") {
+
+                    // Obtener todos los usuarios
+                    get {
+                        val users = UserDAO.getAllUsers().map { it.toDataClass() }
+                        call.respond(HttpStatusCode.OK, users)
                     }
 
-                    val user = UserDAO.getUserById(id)?.toDataClass() // Properly call toDataClass()
-                    if (user == null) {
-                        call.respondText("User not found", status = HttpStatusCode.NotFound)
-                    } else {
-                        call.respond(user) // Respond directly with the data class
-                    }
-                }
+                    // Obtener un usuario por ID
+                    get("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@get
+                        }
 
-                //Get a user by eMail
-                get("/{email}") {
-                    val email = call.parameters["email"]?.toCharArray()
-                    if (email == null) {
-                        call.respondText("Invalid Email", status = HttpStatusCode.BadRequest)
-                        return@get
-                    }
-                    val user = UserDAO.getUserByEmail(email.contentToString())?.toDataClass()
-                    if (user == null) {
-                        call.respondText("User not found", status = HttpStatusCode.NotFound)
-                    } else call.respond(user)
-                }
-
-                // Create a new user
-                post {
-                    val name = call.receiveParameters()["name"].toString()
-                    val email = call.receiveParameters()["email"].toString()
-                    val password = call.receiveParameters()["password"].toString()
-                    if (name.isNullOrBlank()) {
-                        call.respondText("Missing 'name'", status = HttpStatusCode.BadRequest)
-                        return@post
+                        val user = UserDAO.getUserById(id)?.toDataClass()
+                        if (user == null) {
+                            call.respond(HttpStatusCode.NotFound, "User not found")
+                        } else {
+                            call.respond(HttpStatusCode.OK, user)
+                        }
                     }
 
-                    val newUser = UserDAO.createUser(name, email, password) // Directly call the companion object method
-                    call.respond(newUser.toDataClass()) // Convert DAO to data class
-                }
+                    // Obtener un usuario por email
+                    get("/email/{email}") {
+                        val email = call.parameters["email"]
+                        if (email.isNullOrBlank()) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid email format")
+                            return@get
+                        }
 
-                // Update a user
-                patch("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@patch
+                        val user = UserDAO.getUserByEmail(email)?.toDataClass()
+                        if (user == null) {
+                            call.respond(HttpStatusCode.NotFound, "User not found")
+                        } else {
+                            call.respond(HttpStatusCode.OK, user)
+                        }
                     }
 
+                    // Registrar un nuevo usuario
+                    post("/register") {
+                        val registerRequest = call.receive<RegisterRequest>()
 
-                    val param = call.receiveParameters()
-                    val name = param["name"]
-                    val email = param["email"]
-                    val password = param["password"]
+                        if (registerRequest.username.isBlank() || registerRequest.email.isBlank() || registerRequest.password.isBlank()) {
+                            call.respond(HttpStatusCode.BadRequest, "Missing required fields")
+                            return@post
+                        }
 
-                    val updated = UserDAO.updateUser(id = id, newName = name, newEmail = email, newPassw = password)
-                    if (updated) {
-                        call.respondText("User updated successfully")
-                    } else {
-                        call.respondText("User not found", status = HttpStatusCode.NotFound)
-                    }
-                }
+                        if (UserDAO.getUserByEmail(registerRequest.email) != null) {
+                            call.respond(HttpStatusCode.Conflict, "Email already used")
+                            return@post
+                        }
 
-                // Delete a user
-                delete("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@delete
-                    }
+                        val hashedPassword = hashPassword(registerRequest.password)
 
-                    val deleted = UserDAO.deleteUser(id) // Directly call the companion object method
-                    if (deleted) {
-                        call.respondText("User deleted successfully")
-                    } else {
-                        call.respondText("User not found", status = HttpStatusCode.NotFound)
-                    }
-                }
-            }
-            route("/post") {
-                get {
-                    val post = PostDAO.getAllPosts()
-                    call.respond(post.map { it.toDataClass() })
-                }
+                        val user = UserDAO.createUser(
+                            username = registerRequest.username,
+                            email = registerRequest.email,
+                            password = hashedPassword,
 
-                put {
-                    val title = call.receiveParameters()["title"].toString()
-                    val content = call.receiveParameters()["content"].toString()
-                    val imageUrl = call.receiveParameters()["imageUrl"].toString()
+                            profilePic = null
+                        )
 
-                    if (title.isNullOrBlank()) {
-                        call.respondText("Missing 'title'", status = HttpStatusCode.BadRequest)
-                        return@put
+                        call.respond(
+                            HttpStatusCode.Created,
+                            mapOf("message" to "${user.username} registered successfully")
+                        )
                     }
 
-                    val newPost = PostDAO.createPost(title, content, imageUrl)
-                    call.respond(newPost.toDataClass())
-                }
+                    // Actualizar un usuario
+                    patch("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@patch
+                        }
 
-                patch("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@patch
+                        val param = call.receiveParameters()
+                        val updated = UserDAO.updateUser(
+                            id = id,
+                            newUsername = param["username"],
+                            newEmail = param["email"],
+                            newPassword = param["password"],
+                            newProfilePic = param["profilePic"]
+                        )
+
+                        if (updated) {
+                            call.respond(HttpStatusCode.OK, "User updated successfully")
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "User not found")
+                        }
                     }
 
-                    val param = call.receiveParameters()
-                    val title = param["title"]
-                    val content = param["content"].toString()
-                    val imageUrl = param["imageUrl"].toString()
+                    // Eliminar un usuario
+                    delete("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@delete
+                        }
 
-                    val updatedPost =
-                        PostDAO.updatePost(id = id, newTitle = title, newContent = content, newImageUrl = imageUrl)
-                    call.respond(updatedPost)
-
-                    if (updatedPost) {
-                        call.respondText("User updated successfully")
-                    } else call.respondText("User not found", status = HttpStatusCode.NotFound)
-
-                }
-
-                get("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@get
-                    }
-
-                    val post = PostDAO.getPostById(id)?.toDataClass() // Properly call toDataClass()
-                    if (post == null) {
-                        call.respondText("User not found", status = HttpStatusCode.NotFound)
-                    } else {
-                        call.respond(post) // Respond directly with the data class
+                        val deleted = UserDAO.deleteUser(id)
+                        if (deleted) {
+                            call.respond(HttpStatusCode.OK, "User deleted successfully")
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "User not found")
+                        }
                     }
                 }
-                get("/all/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@get
-                    }
-                    val post = PostDAO.getAllPostsOfUser(id).map { it.toDataClass() }
-                    if (post.isEmpty()) {
-                        call.respondText("User no Posts", status = HttpStatusCode.NotFound)
-                    }
-                    call.respond(post)
-                }
 
-                delete("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@delete
-                    }
-                    val delete = PostDAO.deletePostById(id) ?: return@delete
-                    if (delete) {
-                        call.respondText("Post deleted successfully")
-                    } else call.respondText("User not found", status = HttpStatusCode.NotFound)
+                route("/recipe") {
 
-                }
-            }
-            route("/comment") {
-                get {
-                    val com = CommentDAO.getAllComments()
-                    call.respond(com.map { it.toDataClass() })
-                }
-                put("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                    }
-                    val content = call.receiveParameters()["content"].toString()
-                    val com = CommentDAO.createComment(content)
-                    call.respond(com)
-                }
-                patch("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@patch
-                    }
-                    val content = call.receiveParameters()["content"].toString()
-                    val com = CommentDAO.updateComment(id, newContent = content)
-                    call.respond(com)
-
-                    if (com) {
-                        call.respondText("Comment updated successfully")
-                    } else call.respondText("User not found", status = HttpStatusCode.NotFound)
-                }
-                get("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@get
-                    }
-                    val comment = CommentDAO.getCommentById(id)?.toDataClass() ?: return@get
-                    call.respond(comment)
-                }
-                get("/all/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@get
-                    }
-                    val com = CommentDAO.getCommentsByPostID(id).map { it.toDataClass() }
-                    if (com.isEmpty()) {
-                        call.respondText("Comment not found", status = HttpStatusCode.NotFound)
-                    }
-                    call.respond(com)
-                }
-                delete("/{id}") {
-                    val id = call.parameters["id"]?.toIntOrNull()
-                    if (id == null) {
-                        call.respondText("Invalid ID", status = HttpStatusCode.BadRequest)
-                        return@delete
+                    // Obtener todas las recetas
+                    get {
+                        val recipes = RecipeDAO.getAllRecipes().map { it.toDataClass() }
+                        call.respond(HttpStatusCode.OK, recipes)
                     }
 
-                    val delete = CommentDAO.deleteComment(id) ?: return@delete
-                    if (delete) {
-                        call.respondText("Comment deleted succesfully")
-                    } else call.respondText("Comment not found", status = HttpStatusCode.NotFound)
+                    // Obtener una receta por ID
+                    get("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@get
+                        }
+
+                        val recipe = RecipeDAO.getRecipeById(id)?.toDataClass()
+                        if (recipe == null) {
+                            call.respond(HttpStatusCode.NotFound, "Recipe not found")
+                        } else {
+                            call.respond(HttpStatusCode.OK, recipe)
+                        }
+                    }
+
+                    // Obtener todas las recetas de un usuario
+                    get("/all/{userId}") {
+                        val userId = call.parameters["userId"]?.toLongOrNull()
+                        if (userId == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid user ID format")
+                            return@get
+                        }
+
+                        val recipes = RecipeDAO.getRecipesByUser(userId).map { it.toDataClass() }
+                        if (recipes.isEmpty()) {
+                            call.respond(HttpStatusCode.NotFound, "User has no recipes")
+                        } else {
+                            call.respond(HttpStatusCode.OK, recipes)
+                        }
+                    }
+
+                    // Crear una nueva receta
+                    post {
+                        val params = call.receiveParameters()
+                        val userId = params["userId"]?.toLongOrNull()
+                        val title = params["title"]
+                        val description = params["description"]
+                        val servings = params["servings"]?.toIntOrNull()
+                        val imageUrl = params["imageUrl"]
+
+                        if (userId == null || title.isNullOrBlank() || description.isNullOrBlank() || servings == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Missing or invalid parameters")
+                            return@post
+                        }
+
+                        val newRecipe = RecipeDAO.createRecipe(userId, title, description, servings, imageUrl)
+                        call.respond(HttpStatusCode.Created, newRecipe.toDataClass())
+                    }
+
+                    // Actualizar una receta
+                    patch("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@patch
+                        }
+
+                        val params = call.receiveParameters()
+                        val updated = RecipeDAO.updateRecipe(
+                            id = id,
+                            newTitle = params["title"],
+                            newDescription = params["description"],
+                            newServings = params["servings"]?.toIntOrNull(),
+                            newImageUrl = params["imageUrl"]
+                        )
+
+                        if (updated) {
+                            call.respond(HttpStatusCode.OK, "Recipe updated successfully")
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "Recipe not found")
+                        }
+                    }
+
+                    // Eliminar una receta
+                    delete("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@delete
+                        }
+
+                        val deleted = RecipeDAO.deleteRecipe(id)
+                        if (deleted) {
+                            call.respond(HttpStatusCode.OK, "Recipe deleted successfully")
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "Recipe not found")
+                        }
+                    }
                 }
+
+                route("/comment") {
+
+                    // Obtener todos los comentarios
+                    get {
+                        val comments = CommentDAO.getAllComments().map { it.toDataClass() }
+                        call.respond(HttpStatusCode.OK, comments)
+                    }
+
+                    // Obtener un comentario por ID
+                    get("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@get
+                        }
+
+                        val comment = CommentDAO.getCommentById(id)?.toDataClass()
+                        if (comment == null) {
+                            call.respond(HttpStatusCode.NotFound, "Comment not found")
+                        } else {
+                            call.respond(HttpStatusCode.OK, comment)
+                        }
+                    }
+
+                    // Obtener todos los comentarios de una receta específica
+                    get("/recipe/{recipeId}") {
+                        val recipeId = call.parameters["recipeId"]?.toLongOrNull()
+                        if (recipeId == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid recipe ID format")
+                            return@get
+                        }
+
+                        val comments = CommentDAO.getCommentsByRecipeId(recipeId).map { it.toDataClass() }
+                        if (comments.isEmpty()) {
+                            call.respond(HttpStatusCode.NotFound, "No comments found for this recipe")
+                        } else {
+                            call.respond(HttpStatusCode.OK, comments)
+                        }
+                    }
+
+                    // Crear un nuevo comentario
+                    post {
+                        val params = call.receiveParameters()
+                        val recipeId = params["recipeId"]?.toLongOrNull()
+                        val userId = params["userId"]?.toLongOrNull()
+                        val content = params["content"]
+
+                        if (recipeId == null || userId == null || content.isNullOrBlank()) {
+                            call.respond(HttpStatusCode.BadRequest, "Missing or invalid parameters")
+                            return@post
+                        }
+
+                        val newComment = CommentDAO.createComment(recipeId, userId, content)
+                        call.respond(HttpStatusCode.Created, newComment.toDataClass())
+                    }
+
+                    // Actualizar un comentario
+                    patch("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@patch
+                        }
+
+                        val params = call.receiveParameters()
+                        val newContent = params["content"]
+
+                        if (newContent.isNullOrBlank()) {
+                            call.respond(HttpStatusCode.BadRequest, "Missing or invalid content")
+                            return@patch
+                        }
+
+                        val updated = CommentDAO.updateComment(id, newContent)
+                        if (updated) {
+                            call.respond(HttpStatusCode.OK, "Comment updated successfully")
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "Comment not found")
+                        }
+                    }
+
+                    // Eliminar un comentario
+                    delete("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@delete
+                        }
+
+                        val deleted = CommentDAO.deleteComment(id)
+                        if (deleted) {
+                            call.respond(HttpStatusCode.OK, "Comment deleted successfully")
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "Comment not found")
+                        }
+                    }
+                }
+
+                route("/like"){}
             }
         }
     }
