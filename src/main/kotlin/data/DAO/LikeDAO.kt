@@ -11,19 +11,44 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 class LikeDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<LikeData> {
     companion object : LongEntityClass<LikeDAO>(Likes) {
-        fun addLike(userId: Long, recipeId: Long): LikeDAO {
-            return transaction { LikeDAO.new {
-                this.userId = userId
-                this.recipeId = recipeId
-                this.createdAt = System.currentTimeMillis()
-            } }
+
+        // Obtener todos los likes
+        fun getAllLikes(): List<LikeDAO> {
+            return transaction {
+                LikeDAO.all().toList()
+            }
         }
 
+        // Obtener los likes de una receta
+        fun getLikesByRecipe(recipeId: Long): List<LikeDAO> {
+            return transaction {
+                LikeDAO.find { Likes.recipeId eq recipeId }.toList()
+            }
+        }
+
+        // Obtener los likes de un usuario
+        fun getLikesByUser(userId: Long): List<LikeDAO> {
+            return transaction {
+                LikeDAO.find { Likes.userId eq userId }.toList()
+            }
+        }
+
+        // Agregar un like
+        fun addLike(userId: Long, recipeId: Long): LikeDAO {
+            return transaction {
+                LikeDAO.new {
+                    this.userId = userId
+                    this.recipeId = recipeId
+                    this.createdAt = System.currentTimeMillis()
+                }
+            }
+        }
+
+        // Eliminar un like
         fun removeLike(userId: Long, recipeId: Long): Boolean {
             return transaction {
-                val like = LikeDAO.find {
-                    (Likes.userId eq userId) and (Likes.recipeId eq recipeId)
-                }.singleOrNull()
+                val like = LikeDAO.find { (Likes.userId eq userId) and (Likes.recipeId eq recipeId) }
+                    .singleOrNull()
 
                 like?.let {
                     it.delete()
@@ -46,3 +71,4 @@ class LikeDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<LikeD
         )
     }
 }
+

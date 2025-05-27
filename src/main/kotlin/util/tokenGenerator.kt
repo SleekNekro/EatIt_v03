@@ -2,7 +2,7 @@ package com.github.SleekNekro.util
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.github.SleekNekro.data.UserData
+import com.github.SleekNekro.data.clases.UserData
 import java.util.*
 
 fun generateToken(
@@ -17,7 +17,6 @@ fun generateToken(
         .withAudience(audience)
         .withClaim("id", user.id)
         .withClaim("email", user.email)
-        .withClaim("role", user.role.name)
         .withExpiresAt(expiresAt)
         .sign(Algorithm.HMAC256(secret))
 }

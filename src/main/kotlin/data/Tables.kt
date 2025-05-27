@@ -8,7 +8,6 @@ object Users : LongIdTable("users") {
     val password = varchar("password", 255)
     val profilePic = varchar("profile_pic", 255).nullable()
     val followers = integer("followers").default(0)
-    val role = varchar("role", 20)
     val createdAt = long("created_at")
 }
 

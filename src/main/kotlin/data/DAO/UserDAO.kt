@@ -3,6 +3,7 @@ package com.github.SleekNekro.data.DAO
 import com.github.SleekNekro.data.Users
 import com.github.SleekNekro.data.clases.UserData
 import com.github.SleekNekro.util.ConvertibleToDataClass
+import com.github.SleekNekro.util.hashPassword
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -11,16 +12,19 @@ import org.jetbrains.exposed.sql.transactions.transaction
 class UserDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<UserData> {
     companion object : LongEntityClass<UserDAO>(Users) {
         fun createUser(username: String, email: String, password: String, profilePic: String?): UserDAO {
-            return transaction { UserDAO.new {
-                this.username = username
-                this.email = email
-                this.password = password
-                this.profilePic = profilePic
-                this.followers = 0
-                this.createdAt = System.currentTimeMillis()
-            } }
+            return transaction {
+                UserDAO.new {
+                    this.username = username
+                    this.email = email
+                    this.password = password
+                    this.profilePic = profilePic
+                    this.followers = 0
+                    this.createdAt = System.currentTimeMillis()
+                }
+            }
         }
-        fun getAllUsers(): List<UserDAO> {
+
+            fun getAllUsers(): List<UserDAO> {
             return transaction {
                 UserDAO.all().toList()
             }

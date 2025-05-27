@@ -1,10 +1,14 @@
 package com.github.SleekNekro
 
 import com.github.SleekNekro.data.DAO.CommentDAO
+import com.github.SleekNekro.data.DAO.IngredientDAO
+import com.github.SleekNekro.data.DAO.LikeDAO
 import com.github.SleekNekro.data.DAO.RecipeDAO
 import com.github.SleekNekro.data.DAO.UserDAO
 import com.github.SleekNekro.model.request.LoginRequest
+import com.github.SleekNekro.model.request.LoginResponse
 import com.github.SleekNekro.model.request.RegisterRequest
+import com.github.SleekNekro.model.request.UserResponse
 import com.github.SleekNekro.util.generateToken
 import com.github.SleekNekro.util.getJwtConfig
 import com.github.SleekNekro.util.hashPassword
@@ -18,30 +22,31 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
+    println("🚀 Configuración de rutas cargada!")
     val jwtConfig = getJwtConfig()
     routing {
         staticResources("/", "static")
 
         route("/auth") {
-            put("/register") {
+            post("/register") {
                 val registerRequest = call.receive<RegisterRequest>()
 
                 // Validación del email
                 if (!registerRequest.email.contains("@")) {
                     call.respond(HttpStatusCode.BadRequest, "Formato de correo inválido")
-                    return@put
+                    return@post
                 }
 
                 // Validación de la contraseña
                 if (registerRequest.password.length < 6) {
                     call.respond(HttpStatusCode.BadRequest, "La contraseña debe tener al menos 6 caracteres")
-                    return@put
+                    return@post
                 }
 
                 // Verificar si el correo ya está registrado
                 if (UserDAO.getUserByEmail(registerRequest.email) != null) {
                     call.respond(HttpStatusCode.Conflict, "${registerRequest.email} ya está en uso")
-                    return@put
+                    return@post
                 }
 
                 // Encriptar la contraseña antes de guardarla
@@ -58,40 +63,68 @@ fun Application.configureRouting() {
                 call.respond(HttpStatusCode.Created, mapOf("message" to "${user.username} registrado correctamente"))
             }
 
+
             post("/login") {
-                val loginRequest = call.receive<LoginRequest>()
+    try {
+        val loginRequest = call.receive<LoginRequest>()
+        
+        println("\n🔍 Detalles de la solicitud de login:")
+        println("📧 Email recibido: ${loginRequest.email}")
+        
+        val userEntity = UserDAO.getUserByEmail(loginRequest.email)
+        println("\n🔎 Buscando usuario en la base de datos...")
+        println("🗃️ Resultado de la búsqueda: ${if (userEntity != null) "Usuario encontrado" else "Usuario NO encontrado"}")
+        
+        if (userEntity == null) {
+            println("❌ No se encontró ningún usuario con el email: ${loginRequest.email}")
+            call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Email o contraseña inválidos"))
+            return@post
+        }
+        
+        val user = userEntity.toDataClass()
+        println("✅ Usuario encontrado: ${user.email}")
+        
+        // Añadimos más información de depuración para la verificación de contraseña
+        println("\n🔐 Información de verificación de contraseña:")
+        println("📝 Longitud de la contraseña recibida: ${loginRequest.password.length}")
+        println("🔑 Hash almacenado en DB: ${user.password}")
+        
+        val passwordMatch = verifyPassword(loginRequest.password, user.password)
+        println("🔍 Resultado de verificación: ${if (passwordMatch) "Exitosa" else "Fallida"}")
+        
+        if (passwordMatch) {
+            val token = generateToken(user, jwtConfig.secret, jwtConfig.domain, jwtConfig.audience)
+            println("🎟️ Token generado exitosamente")
 
-                // Buscar usuario por email en lugar de username
-                val user = UserDAO.getUserByEmail(loginRequest.email)?.toDataClass()
-
-                if (user == null || !verifyPassword(loginRequest.password, user.password)) {
-                    call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Email o contraseña inválidos"))
-                    return@post
-                }
-
-                // Generar el token JWT
-                val token = generateToken(user, jwtConfig.secret, jwtConfig.domain, jwtConfig.audience)
-
-                call.respond(
-                    HttpStatusCode.OK, mapOf(
-                        "token" to token,
-                        "user" to mapOf(
-                            "id" to user.id,
-                            "username" to user.username,
-                            "email" to user.email,
-                            "profilePic" to user.profilePic,
-                            "followers" to user.followers
-                        )
+            token?.let {
+                call.respond(HttpStatusCode.OK, LoginResponse(
+                    token = it,
+                    user = UserResponse(
+                        id = user.id,
+                        username = user.username,
+                        email = user.email,
+                        profilePic = user.profilePic,
+                        followers = user.followers
                     )
-                )
+                ))
             }
-
+        } else {
+            call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Email o contraseña inválidos"))
+        }
+    } catch (e: Exception) {
+        println("⚠️ Error en login: ${e.message}")
+        e.printStackTrace()
+        call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Error interno del servidor"))
+    }
+}
+            }
 
             authenticate("auth-jwt") {
                 route("/user") {
 
                     // Obtener todos los usuarios
                     get {
+                        println("🚀 Configuración de rutas cargada!")
                         val users = UserDAO.getAllUsers().map { it.toDataClass() }
                         call.respond(HttpStatusCode.OK, users)
                     }
@@ -126,36 +159,6 @@ fun Application.configureRouting() {
                         } else {
                             call.respond(HttpStatusCode.OK, user)
                         }
-                    }
-
-                    // Registrar un nuevo usuario
-                    post("/register") {
-                        val registerRequest = call.receive<RegisterRequest>()
-
-                        if (registerRequest.username.isBlank() || registerRequest.email.isBlank() || registerRequest.password.isBlank()) {
-                            call.respond(HttpStatusCode.BadRequest, "Missing required fields")
-                            return@post
-                        }
-
-                        if (UserDAO.getUserByEmail(registerRequest.email) != null) {
-                            call.respond(HttpStatusCode.Conflict, "Email already used")
-                            return@post
-                        }
-
-                        val hashedPassword = hashPassword(registerRequest.password)
-
-                        val user = UserDAO.createUser(
-                            username = registerRequest.username,
-                            email = registerRequest.email,
-                            password = hashedPassword,
-
-                            profilePic = null
-                        )
-
-                        call.respond(
-                            HttpStatusCode.Created,
-                            mapOf("message" to "${user.username} registered successfully")
-                        )
                     }
 
                     // Actualizar un usuario
@@ -395,8 +398,126 @@ fun Application.configureRouting() {
                     }
                 }
 
-                route("/like"){}
+                route("/like") {
+
+                    // Obtener todos los likes
+                    get {
+                        val likes = LikeDAO.getAllLikes().map { it.toDataClass() }
+                        call.respond(HttpStatusCode.OK, likes)
+                    }
+
+                    // Obtener los likes de una receta
+                    get("/recipe/{recipeId}") {
+                        val recipeId = call.parameters["recipeId"]?.toLongOrNull()
+                        if (recipeId == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid recipe ID format")
+                            return@get
+                        }
+
+                        val likes = LikeDAO.getLikesByRecipe(recipeId).map { it.toDataClass() }
+                        call.respond(HttpStatusCode.OK, likes)
+                    }
+
+                    // Obtener los likes de un usuario
+                    get("/user/{userId}") {
+                        val userId = call.parameters["userId"]?.toLongOrNull()
+                        if (userId == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid user ID format")
+                            return@get
+                        }
+
+                        val likes = LikeDAO.getLikesByUser(userId).map { it.toDataClass() }
+                        call.respond(HttpStatusCode.OK, likes)
+                    }
+
+                    // Agregar un like
+                    post {
+                        val params = call.receiveParameters()
+                        val userId = params["userId"]?.toLongOrNull()
+                        val recipeId = params["recipeId"]?.toLongOrNull()
+
+                        if (userId == null || recipeId == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Missing or invalid parameters")
+                            return@post
+                        }
+
+                        val like = LikeDAO.addLike(userId, recipeId)
+                        call.respond(HttpStatusCode.Created, like.toDataClass())
+                    }
+
+                    // Eliminar un like
+                    delete {
+                        val params = call.receiveParameters()
+                        val userId = params["userId"]?.toLongOrNull()
+                        val recipeId = params["recipeId"]?.toLongOrNull()
+
+                        if (userId == null || recipeId == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Missing or invalid parameters")
+                            return@delete
+                        }
+
+                        val deleted = LikeDAO.removeLike(userId, recipeId)
+                        if (deleted) {
+                            call.respond(HttpStatusCode.OK, "Like removed successfully")
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "Like not found")
+                        }
+                    }
+                }
+
+                route("/ingredient") {
+
+                    // Obtener todos los ingredientes
+                    get {
+                        val ingredients = IngredientDAO.getAllIngredients().map { it.toDataClass() }
+                        call.respond(HttpStatusCode.OK, ingredients)
+                    }
+
+                    // Obtener los ingredientes de una receta
+                    get("/recipe/{recipeId}") {
+                        val recipeId = call.parameters["recipeId"]?.toLongOrNull()
+                        if (recipeId == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid recipe ID format")
+                            return@get
+                        }
+
+                        val ingredients = IngredientDAO.getIngredientsByRecipe(recipeId).map { it.toDataClass() }
+                        call.respond(HttpStatusCode.OK, ingredients)
+                    }
+
+                    // Agregar un ingrediente
+                    post {
+                        val params = call.receiveParameters()
+                        val recipeId = params["recipeId"]?.toLongOrNull()
+                        val name = params["name"]
+                        val quantity = params["quantity"]
+
+                        if (recipeId == null || name.isNullOrBlank() || quantity.isNullOrBlank()) {
+                            call.respond(HttpStatusCode.BadRequest, "Missing or invalid parameters")
+                            return@post
+                        }
+
+                        val ingredient = IngredientDAO.addIngredient(recipeId, name, quantity)
+                        call.respond(HttpStatusCode.Created, ingredient.toDataClass())
+                    }
+
+                    // Eliminar un ingrediente
+                    delete("/{id}") {
+                        val id = call.parameters["id"]?.toLongOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Invalid ID format")
+                            return@delete
+                        }
+
+                        val deleted = IngredientDAO.removeIngredient(id)
+                        if (deleted) {
+                            call.respond(HttpStatusCode.OK, "Ingredient removed successfully")
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "Ingredient not found")
+                        }
+                    }
+                }
+
             }
         }
     }
-}

@@ -3,7 +3,7 @@ ktor:
     modules:
       - com.github.SleekNekro.ApplicationKt.module
   deployment:
-    port: 9292
+    port: 8085
 jwt:
   domain: "https://jwt-provider-domain/"
   audience: "jwt-audience"

@@ -10,13 +10,14 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.routing.Routing
 import io.ktor.server.thymeleaf.*
 import kotlinx.serialization.json.Json
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
 
 
 fun main(args: Array<String>) {
-    embeddedServer(Netty, port = 9292, host = "127.0.0.1") {
+    embeddedServer(Netty, port = 8085, host = "127.0.0.1") {
         module()
     }.start()
 }
