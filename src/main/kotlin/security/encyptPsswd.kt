@@ -1,4 +1,4 @@
-package com.github.SleekNekro.util
+package com.github.SleekNekro.security
 
 import org.mindrot.jbcrypt.BCrypt
 

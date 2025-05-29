@@ -1,6 +1,9 @@
 package com.github.SleekNekro.data
 
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.javatime.*
 
 object Users : LongIdTable("users") {
     val username = varchar("username", 50)
@@ -37,4 +40,17 @@ object Likes : LongIdTable("likes") {
     val userId = long("user_id").references(Users.id)
     val recipeId = long("recipe_id").references(Recipes.id)
     val createdAt = long("created_at")
+}
+
+// Tables.kt
+object Followers : Table() {
+    val id = long("id").autoIncrement()
+    val userId = long("user_id").references(Users.id)
+    val followerId = long("follower_id").references(Users.id)
+    val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
+    
+    override val primaryKey = PrimaryKey(id)
+    init {
+        uniqueIndex(userId, followerId) // Evita duplicados
+    }
 }

@@ -5,6 +5,7 @@ val logback_version: String by project
 val ktor_version: String by project
 val commons_codec_version: String by project
 
+
 plugins {
     kotlin("jvm") version "2.1.20"
     id("io.ktor.plugin") version "3.1.2"
@@ -66,6 +67,13 @@ dependencies {
     //Thymeleaf
     implementation("io.ktor:ktor-server-thymeleaf:$ktor_version")
     implementation("io.ktor:ktor-server-auth-jwt:3.1.2")
+
+
+    implementation("io.ktor:ktor-server-core:${ktor_version}")
+    implementation("io.ktor:ktor-server-cors:${ktor_version}")
+    implementation("commons-fileupload:commons-fileupload:1.5")
+    implementation("commons-io:commons-io:2.15.1")
+
 
 
     // Testing: Dependencias para escribir y ejecutar pruebas de tu aplicación

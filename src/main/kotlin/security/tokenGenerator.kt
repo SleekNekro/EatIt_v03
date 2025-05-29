@@ -1,4 +1,4 @@
-package com.github.SleekNekro.util
+package com.github.SleekNekro.security
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
