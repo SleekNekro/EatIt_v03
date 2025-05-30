@@ -23,7 +23,6 @@ suspend fun ApplicationCall.respondInvalidFormat(field: String) {
 }
 
 fun Route.configureUserRoutes() {
-    route("/users") {
         get {
             try {
                 val users = UserDAO.getAllUsers().map { it.toDataClass() }
@@ -101,4 +100,3 @@ fun Route.configureUserRoutes() {
             }
         }
     }
-}

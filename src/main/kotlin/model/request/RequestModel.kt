@@ -3,6 +3,20 @@ package com.github.SleekNekro.model.request
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class LoginRequest(
+    val email: String,
+    val password: String
+)
+
+@Serializable
+data class RegisterRequest(
+    val username: String,
+    val password: String,
+    val email: String,
+)
+
+
+@Serializable
 data class RecipeRequest(
     val userId: Long,
     val title: String,
@@ -44,13 +58,4 @@ data class FollowerRequest(
     val followerId: Long
 )
 
-@Serializable
-data class ImageUploadResponse(
-    val url: String
-)
 
-@Serializable
-data class FollowResponse(
-    val success: Boolean,
-    val message: String
-)
