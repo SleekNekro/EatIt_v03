@@ -22,14 +22,6 @@ import org.slf4j.event.Level
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
 
 
-fun main(args: Array<String>) {
-    val port = System.getenv("PORT")?.toInt() ?: 8085
-    println("Puerto en uso: $port")  // Para depuración
-    embeddedServer(Netty, port = port, host = "0.0.0.0") {
-        module()
-    }.start(wait = true)
-}
-
 
 
 fun Application.module() {
