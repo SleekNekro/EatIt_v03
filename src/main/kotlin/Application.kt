@@ -23,10 +23,14 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
 
 
 fun main(args: Array<String>) {
-    embeddedServer(Netty, port = 8085, host = "127.0.0.1") {
+    // Heroku define la variable de entorno PORT; en caso de que no esté definida, usa el puerto 8085 (ideal para pruebas locales)
+    val port = System.getenv("PORT")?.toInt() ?: 8085
+    // Para que Heroku acepte las conexiones, debemos escuchar en "0.0.0.0"
+    embeddedServer(Netty, port = port, host = "0.0.0.0") {
         module()
-    }.start()
+    }.start(wait = true)
 }
+
 
 fun Application.module() {
     install(ContentNegotiation) {

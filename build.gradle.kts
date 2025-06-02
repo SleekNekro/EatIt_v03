@@ -6,13 +6,25 @@ val ktor_version: String by project
 val commons_codec_version: String by project
 
 
+
 plugins {
     kotlin("jvm") version "2.1.20"
     id("io.ktor.plugin") version "3.1.2"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.1.20"
 }
-tasks.register("stage") {
-    dependsOn("build")
+
+
+tasks {
+    shadowJar {
+        // Define el nombre del jar que se generará
+        archiveFileName.set("EatIt_v03.jar")
+        mergeServiceFiles() // Opcional, útil si necesitas fusionar archivos de servicios
+    }
+
+    // Tarea 'stage' requerida por Heroku
+    register("stage") {
+        dependsOn("shadowJar")
+    }
 }
 
 group = "com.github.SleekNekro"
@@ -28,8 +40,9 @@ application {
 repositories {
     mavenCentral()
 }
-ktor{
-    docker{
+
+ktor {
+    docker {
         externalRegistry.set(
             io.ktor.plugin.features.DockerImageRegistry.dockerHub(
                 appName = provider { "ktor-server" },
@@ -41,46 +54,42 @@ ktor{
 }
 
 dependencies {
-    // Core de Ktor: Librerías esenciales para ejecutar el servidor y manejar la configuración básica
-    implementation("io.ktor:ktor-server-core") // Núcleo del servidor Ktor
-    implementation("io.ktor:ktor-server-netty") // Motor de servidor Netty para ejecutar Ktor
-    implementation("io.ktor:ktor-server-config-yaml") // Permite configurar Ktor usando archivos YAML
+    // Core de Ktor
+    implementation("io.ktor:ktor-server-core") // Puede que quieras consolidar esta línea con la siguiente
+    implementation("io.ktor:ktor-server-netty")
+    implementation("io.ktor:ktor-server-config-yaml")
 
-    // Content Negotiation: Gestión de formatos de respuesta como JSON
-    implementation("io.ktor:ktor-server-content-negotiation") // Negociación de contenido para la API
-    implementation("io.ktor:ktor-serialization-kotlinx-json") // Serialización JSON con kotlinx.serialization
+    // Content Negotiation
+    implementation("io.ktor:ktor-server-content-negotiation")
+    implementation("io.ktor:ktor-serialization-kotlinx-json")
 
-    // Base de datos: Librerías para conectarse y trabajar con bases de datos
-    implementation("org.jetbrains.exposed:exposed-core:$exposed_version") // Exposed: núcleo del ORM
+    // Base de datos
+    implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
-    implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version") // Exposed: soporte para JDBC
-    implementation("com.h2database:h2:$h2_version") // Driver de base de datos H2 para pruebas locales
-    implementation("mysql:mysql-connector-java:8.0.33") // Driver MySQL para conectar con bases de datos MySQL
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
+    implementation("com.h2database:h2:$h2_version")
+    implementation("mysql:mysql-connector-java:8.0.33")
     implementation("org.jetbrains.exposed:exposed-java-time:0.42.0")
 
-
-    // Seguridad: Plugins de autenticación y autorización para proteger endpoints
+    // Seguridad
     implementation("io.ktor:ktor-server-auth-jwt-jvm:3.1.2")
-    implementation("io.ktor:ktor-server-auth:$ktor_version") // Autenticación para Ktor
+    implementation("io.ktor:ktor-server-auth:$ktor_version")
     implementation("commons-codec:commons-codec:$commons_codec_version")
     implementation("org.mindrot:jbcrypt:0.4")
 
-    // Logging: Librerías para el registro de eventos y depuración
-    implementation("ch.qos.logback:logback-classic:$logback_version") // Logback para gestión robusta de logs
-    //Thymeleaf
+    // Logging y Thymeleaf
+    implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("io.ktor:ktor-server-thymeleaf:$ktor_version")
     implementation("io.ktor:ktor-server-auth-jwt:3.1.2")
 
+    // Otras dependencias
     implementation("io.ktor:ktor-server-call-logging:2.0.0")
-
     implementation("io.ktor:ktor-server-core:${ktor_version}")
     implementation("io.ktor:ktor-server-cors:${ktor_version}")
     implementation("commons-fileupload:commons-fileupload:1.5")
     implementation("commons-io:commons-io:2.15.1")
 
-
-
-    // Testing: Dependencias para escribir y ejecutar pruebas de tu aplicación
-    testImplementation("io.ktor:ktor-server-test-host") // Herramientas de prueba para endpoints de Ktor
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version") // Pruebas de Kotlin con soporte para JUnit
+    // Testing
+    testImplementation("io.ktor:ktor-server-test-host")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
 }
