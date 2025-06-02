@@ -31,10 +31,9 @@ group = "com.github.SleekNekro"
 version = "0.0.1"
 
 application {
-    mainClass = "io.ktor.server.netty.EngineMain"
-
-    val isDevelopment: Boolean = project.ext.has("development")
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
+    // Cambia esta línea por el nombre completo de tu clase que contiene el main personalizado
+    mainClass.set("com.github.SleekNekro.ApplicationKt.main")
+    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=false")
 }
 
 repositories {
@@ -52,6 +51,21 @@ ktor {
         )
     }
 }
+
+
+// Configuración para las tareas Kotlin
+tasks.withType<JavaCompile> {
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+
 
 dependencies {
     // Core de Ktor
