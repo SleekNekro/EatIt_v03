@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 val exposed_version: String by project
 val h2_version: String by project
 val kotlin_version: String by project
@@ -39,17 +41,27 @@ repositories {
     mavenCentral()
 }
 
-ktor {
-    docker {
-        externalRegistry.set(
-            io.ktor.plugin.features.DockerImageRegistry.dockerHub(
-                appName = provider { "ktor-server" },
-                username = providers.environmentVariable("DOCKER_HUB_USERNAME"),
-                password = providers.environmentVariable("DOCKER_HUB_PASSWORD"),
-            )
-        )
-    }
-}
+//ktor {
+//    docker {
+//        // Nombre de la imagen generada localmente y su tag
+//        localImageName.set("EatIt_v03")
+//        imageTag.set("latest")
+//
+//        // Opcional: especifica el puerto expuesto si lo deseas (por defecto, la app usa el puerto indicado en la variable PORT)
+//        // exposedPort.set(8085)
+//
+//        // Configuración para subir la imagen a Docker Hub (si es que quieres publicarla)
+//        externalRegistry.set(
+//            io.ktor.plugin.features.DockerImageRegistry.dockerHub(
+//                // Puedes cambiar el appName para que coincida con tu imagen
+//                appName = provider { "EatIt_v03" },
+//                username = providers.environmentVariable("DOCKER_HUB_USERNAME"),
+//                password = providers.environmentVariable("DOCKER_HUB_PASSWORD"),
+//            )
+//        )
+//    }
+//}
+
 
 
 // Configuración para las tareas Kotlin
@@ -59,8 +71,8 @@ tasks.withType<JavaCompile> {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = "17"
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
