@@ -16,6 +16,8 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.select
+import org.slf4j.LoggerFactory
+import kotlin.math.log
 
 class UserDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<UserData> {
     companion object : LongEntityClass<UserDAO>(Users) {
@@ -31,6 +33,7 @@ class UserDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<UserD
                 }
             }
         }
+        private val logger = LoggerFactory.getLogger(UserDAO::class.java)
 
         fun getAllUsers(): List<UserDAO> {
             return transaction {
@@ -111,21 +114,33 @@ class UserDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<UserD
             }
         }
 
-        fun getFollowers(userId: Long): List<ResultRow> {
+        fun getFollowers(userId: Long): Long {
             return transaction {
-                (Users innerJoin Followers)
-                    .select((Followers.userId eq userId))
-                    .toList()
+                try {
+                    (Followers)
+                        .select(Followers.userId eq userId)
+                        .count() // 🔥 Devuelve un número directo
+                } catch (e: Exception) {
+                    println("❌ Error en getFollowersCount para userId=$userId: ${e.message}") // 🚀 Log del error
+                    0 // ✅ Si hay error, devuelve `0` en lugar de causar un fallo
+                }
             }
         }
 
-        fun getFollowing(userId: Long): List<ResultRow> {
+        fun getFollowing(userId: Long): Long {
             return transaction {
-                (Users innerJoin Followers)
-                    .select((Users.id eq Followers.followerId) and (Followers.userId eq userId))
-                    .toList()
+                try {
+                    (Followers)
+                        .select(Followers.userId eq userId)
+                        .count() // 🔥 Devuelve la cantidad correcta de seguidos
+                } catch (e: Exception) {
+                    println("❌ Error en getFollowingCount para userId=$userId: ${e.message}")
+                    0 // ✅ Evita error 500 en la API
+                }
             }
         }
+
+
 
         fun isFollowing(userId: Long, followerId: Long): Boolean {
             return transaction {

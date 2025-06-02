@@ -4,9 +4,13 @@
             <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <root level="INFO">
+
+    <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </root>
-    <logger name="org.eclipse.jetty" level="INFO"/>
-    <logger name="io.netty" level="INFO"/>
+
+    <!-- Registrar todas las solicitudes HTTP que recibe Ktor -->
+    <logger name="io.ktor.server.request" level="DEBUG"/>
+    <logger name="io.ktor.server.routing" level="DEBUG"/>
+    <logger name="io.ktor.server.engine" level="DEBUG"/>
 </configuration>

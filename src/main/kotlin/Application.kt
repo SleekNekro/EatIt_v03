@@ -12,10 +12,13 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.routing.routing
 import io.ktor.server.thymeleaf.*
 import kotlinx.serialization.json.Json
+import org.slf4j.event.Level
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
 
 
@@ -31,6 +34,9 @@ fun Application.module() {
             prettyPrint = true
             isLenient = true
         })
+    }
+    install(CallLogging) {
+        level = Level.DEBUG
     }
     install(Thymeleaf) {
         setTemplateResolver(ClassLoaderTemplateResolver().apply {

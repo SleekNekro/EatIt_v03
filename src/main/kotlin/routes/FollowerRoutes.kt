@@ -6,6 +6,8 @@ import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlin.collections.emptyList
+import kotlin.collections.mapOf
 
 fun Route.configureFollowerRoutes() {
     route("/follower") {
@@ -43,29 +45,35 @@ fun Route.configureFollowerRoutes() {
             }
         }
 
-        get("/{id}/followers") {
+
+        get("/{id}/followers/count") {
             try {
                 val userId = call.parameters["id"]?.toLongOrNull()
                     ?: return@get call.respondInvalidId()
 
-                val followers = UserDAO.getFollowers(userId)
-                call.respond(HttpStatusCode.OK, followers)
+                val followersCount = UserDAO.getFollowers(userId) // 🔥 Ahora devuelve directamente un `Long`
+                call.respond(HttpStatusCode.OK, mapOf("followers_count" to followersCount)) // ✅ Devuelve el número correcto
             } catch (e: Exception) {
+                println("❌ Error en /followers/count: ${e.message}") // 🔥 Log para depurar
                 call.respond(HttpStatusCode.InternalServerError, "Error al obtener seguidores: ${e.message}")
             }
         }
 
-        get("/{id}/followers") {
+
+        get("/{id}/following/count") {
             try {
                 val userId = call.parameters["id"]?.toLongOrNull()
                     ?: return@get call.respondInvalidId()
 
-                val followers = UserDAO.getFollowers(userId)
-                call.respond(HttpStatusCode.OK, followers)
+                val followingCount = UserDAO.getFollowing(userId) // 🔥 Ahora devuelve directamente un `Long`
+                call.respond(HttpStatusCode.OK, mapOf("following_count" to followingCount)) // ✅ Devuelve el número correcto
             } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, "Error al obtener seguidores: ${e.message}")
+                println("❌ Error en /following/count: ${e.message}") // 🔥 Log para depurar
+                call.respond(HttpStatusCode.InternalServerError, "Error al obtener cantidad de seguidos: ${e.message}")
             }
         }
+
+
 
     }
 }

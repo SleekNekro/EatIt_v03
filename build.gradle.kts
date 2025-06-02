@@ -68,6 +68,7 @@ dependencies {
     implementation("io.ktor:ktor-server-thymeleaf:$ktor_version")
     implementation("io.ktor:ktor-server-auth-jwt:3.1.2")
 
+    implementation("io.ktor:ktor-server-call-logging:2.0.0")
 
     implementation("io.ktor:ktor-server-core:${ktor_version}")
     implementation("io.ktor:ktor-server-cors:${ktor_version}")

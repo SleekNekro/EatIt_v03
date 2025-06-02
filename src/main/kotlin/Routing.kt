@@ -12,6 +12,7 @@ fun Application.configureRouting() {
     val jwtConfig = getJwtConfig()
     
     routing {
+
         staticResources("/", "static")
         
         route("/auth") {
@@ -28,5 +29,7 @@ fun Application.configureRouting() {
             configureFollowerRoutes()
 
         }
+        environment.log.info("Rutas registradas en el servidor:")
+        application.environment.log.info(application.attributes.toString())
     }
 }

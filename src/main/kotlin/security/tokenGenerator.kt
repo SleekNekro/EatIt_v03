@@ -11,7 +11,7 @@ fun generateToken(
     issuer: String,
     audience: String
 ): String? {
-    val expiresAt = Date(System.currentTimeMillis() + 60 * 60 * 1000)
+    val expiresAt = Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000)
     return JWT.create()
         .withIssuer(issuer)
         .withAudience(audience)

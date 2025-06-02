@@ -9,6 +9,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 
+
 class LikeDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<LikeData> {
     companion object : LongEntityClass<LikeDAO>(Likes) {
 
@@ -18,6 +19,14 @@ class LikeDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<LikeD
                 LikeDAO.all().toList()
             }
         }
+        fun getLikeExists(userId: Long, recipeId: Long): Boolean {
+            return transaction {
+                LikeDAO.find {
+                    (Likes.userId eq userId) and (Likes.recipeId eq recipeId)
+                }.count() > 0
+            }
+        }
+
 
         // Obtener los likes de una receta
         fun getLikesByRecipe(recipeId: Long): List<LikeDAO> {
@@ -34,8 +43,21 @@ class LikeDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<LikeD
         }
 
         // Agregar un like
-        fun addLike(userId: Long, recipeId: Long): LikeDAO {
+        fun addLike(userId: Long, recipeId: Long): LikeDAO? {
             return transaction {
+                // Verificar que el usuario existe
+                val userExists = UserDAO.findById(userId) != null
+                if (!userExists) {
+                    return@transaction null
+                }
+                
+                // Verificar que la receta existe
+                val recipeExists = RecipeDAO.findById(recipeId) != null
+                if (!recipeExists) {
+                    return@transaction null
+                }
+
+                // Crear el like solo si ambos existen
                 LikeDAO.new {
                     this.userId = userId
                     this.recipeId = recipeId
@@ -50,10 +72,12 @@ class LikeDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<LikeD
                 val like = LikeDAO.find { (Likes.userId eq userId) and (Likes.recipeId eq recipeId) }
                     .singleOrNull()
 
-                like?.let {
-                    it.delete()
-                    return@transaction true
-                } ?: false
+                if (like != null) {
+                    like.delete()
+                    true
+                } else {
+                    false
+                }
             }
         }
     }
@@ -71,4 +95,3 @@ class LikeDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<LikeD
         )
     }
 }
-
