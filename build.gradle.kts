@@ -11,6 +11,9 @@ plugins {
     id("io.ktor.plugin") version "3.1.2"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.1.20"
 }
+tasks.register("stage") {
+    dependsOn("build")
+}
 
 group = "com.github.SleekNekro"
 version = "0.0.1"
