@@ -10,11 +10,10 @@ data class JwtConfig(
 )
 
 fun Application.getJwtConfig(): JwtConfig {
-    val config = environment.config
     return JwtConfig(
-        domain = config.property("jwt.domain").getString(),
-        audience = config.property("jwt.audience").getString(),
-        realm = config.property("jwt.realm").getString(),
-        secret = config.property("jwt.secret").getString()
+        domain = System.getenv("JWT_DOMAIN") ?: "https://jwt-provider-domain/",
+        audience = System.getenv("JWT_AUDIENCE") ?: "jwt-audience",
+        realm = System.getenv("JWT_REALM") ?: "ktor sample app",
+        secret = System.getenv("JWT_SECRET") ?: "secret"
     )
 }

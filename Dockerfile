@@ -1,25 +1,17 @@
-# Stage 1: Cache Gradle dependencies
-FROM gradle:latest AS cache
-LABEL author = "Iker Perez Mata"
-RUN mkdir -p /home/gradle/cache_home
-ENV GRADLE_USER_HOME=/home/gradle/cache_home
-COPY build.gradle.* gradle.properties /home/gradle/app/
-COPY gradle /home/gradle/app/gradle
-WORKDIR /home/gradle/app
-RUN gradle clean build -i --stacktrace
+FROM openjdk:17-jdk-slim
 
-# Stage 2: Build Application
-FROM gradle:latest AS build
-COPY --from=cache /home/gradle/cache_home /home/gradle/.gradle
-COPY --chown=gradle:gradle . /home/gradle/src
-WORKDIR /home/gradle/src
-# Build the fat JAR, Gradle also supports shadow
-# and boot JAR by default.
-RUN gradle buildFatJar --no-daemon
+WORKDIR /src
+COPY . /src
 
-# Stage 3: Create the Runtime Image
-FROM amazoncorretto:22 AS runtime
-EXPOSE 9292
-RUN mkdir /app
-COPY --from=build /home/gradle/src/build/libs/*.jar /app/ktor-docker-sample.jar
-ENTRYPOINT ["java","-jar","/app/ktor-docker-sample.jar"]
+RUN apt-get update
+RUN apt-get install -y dos2unix
+RUN dos2unix gradlew
+
+RUN bash gradlew fatJar
+
+WORKDIR /run
+RUN cp /src/build/libs/*.jar /run/server.jar
+
+EXPOSE 8085
+
+CMD java -jar /run/server.jar
