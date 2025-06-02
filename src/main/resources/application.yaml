@@ -3,8 +3,8 @@ ktor:
     modules:
       - com.github.SleekNekro.ApplicationKt.module
   deployment:
-    port: ${PORT}  # Usa el valor de PORT, o 8085 si no existe (útil para desarrollo local)
-    host: "0.0.0.0"      # Permite conexiones externas
+    port: 8085
+    host: "0.0.0.0"
 jwt:
   domain: "https://jwt-provider-domain/"
   audience: "jwt-audience"
