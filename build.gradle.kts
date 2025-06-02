@@ -31,8 +31,7 @@ group = "com.github.SleekNekro"
 version = "0.0.1"
 
 application {
-    // Cambia esta línea por el nombre completo de tu clase que contiene el main personalizado
-    mainClass.set("com.github.SleekNekro.ApplicationKt.Main.kt")
+    mainClass.set("com.github.SleekNekro.ApplicationKt")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=false")
 }
 
