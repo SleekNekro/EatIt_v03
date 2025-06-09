@@ -113,6 +113,7 @@ dependencies {
     implementation("io.ktor:ktor-server-cors:${ktor_version}")
     implementation("commons-fileupload:commons-fileupload:1.5")
     implementation("commons-io:commons-io:2.15.1")
+    implementation("io.ktor:ktor-server-sse:3.1.2")
 
     // Testing
     testImplementation("io.ktor:ktor-server-test-host")

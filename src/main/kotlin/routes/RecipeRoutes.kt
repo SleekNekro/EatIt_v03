@@ -3,14 +3,42 @@ package com.github.SleekNekro.routes
 import com.github.SleekNekro.data.DAO.RecipeDAO
 import com.github.SleekNekro.model.request.RecipeRequest
 import com.github.SleekNekro.model.request.UpdateRecipeRequest
-import com.github.SleekNekro.util.*
+import com.github.SleekNekro.util.SseBroadcaster
 import io.ktor.http.*
-import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+
+private val recipeBroadcaster = SseBroadcaster()
+
+@OptIn(DelicateCoroutinesApi::class)
+fun startSseHeartbeat() {
+    println("🚀 `startSseHeartbeat()` se ha ejecutado!")  // 🔥 Log de inicio
+    GlobalScope.launch {
+        while (true) {
+            println("🔍 Intentando enviar evento SSE")
+            recipeBroadcaster.broadcast("keep_alive", "{\"message\": \"Ping SSE\"}")
+            delay(5000)
+        }
+    }
+}
 
 fun Route.configureRecipeRoutes() {
+    println("🔍 Clientes SSE conectados: ${recipeBroadcaster.clients.size}")
+    // Endpoint SSE para actualizaciones en tiempo real
+    get("/events") {
+        call.response.headers.append(HttpHeaders.ContentType, ContentType.Text.EventStream.toString())
+        recipeBroadcaster.addClient(call)
+        println("🔍 Cliente SSE conectado!")
+        println("🔍 Lista de clientes actualizada: ${recipeBroadcaster.clients.size}")  // 🔥 Confirmar almacenamiento
+    }
+
+
     get {
         val recipes = RecipeDAO.getAllRecipes().map { it.toDataClass() }
         call.respond(HttpStatusCode.OK, recipes)
@@ -36,6 +64,23 @@ fun Route.configureRecipeRoutes() {
         }
     }
 
+    get("/recipes/search") {
+        try {
+            val query = call.parameters["query"] ?: return@get call.respond(
+                HttpStatusCode.BadRequest,
+                mapOf("error" to "El parámetro de búsqueda es requerido")
+            )
+
+            val recetas = RecipeDAO.findByName(query)
+            call.respond(HttpStatusCode.OK, recetas)
+        } catch (e: Exception) {
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                mapOf("error" to "Error al buscar recetas: ${e.message}")
+            )
+        }
+    }
+
     post {
         val recipeRequest = call.receive<RecipeRequest>()
         val newRecipe = RecipeDAO.createRecipe(
@@ -44,6 +89,18 @@ fun Route.configureRecipeRoutes() {
             description = recipeRequest.description,
             servings = recipeRequest.servings,
             imageUrl = recipeRequest.imageUrl
+        )
+        
+        // Notificar a los clientes sobre la nueva receta
+        recipeBroadcaster.broadcast(
+            "recipe_update",
+            Json.encodeToString(
+                mapOf(
+                    "type" to "create",
+                    "recipe" to newRecipe.toDataClass()
+                )
+            )
+
         )
         call.respond(HttpStatusCode.Created, newRecipe.toDataClass())
     }
@@ -62,6 +119,19 @@ fun Route.configureRecipeRoutes() {
         )
 
         if (updated) {
+            // Obtener la receta actualizada y notificar a los clientes
+            val updatedRecipe = RecipeDAO.getRecipeById(id)?.toDataClass()
+            updatedRecipe?.let {
+                recipeBroadcaster.broadcast(
+                    "recipe_update",
+                    Json.encodeToString(
+                        mapOf(
+                            "type" to "update",
+                            "recipe" to it
+                        )
+                    )
+                )
+            }
             call.respond(HttpStatusCode.OK, "Receta actualizada correctamente")
         } else {
             call.respondNotFound("Receta")
@@ -73,6 +143,16 @@ fun Route.configureRecipeRoutes() {
             ?: return@delete call.respondInvalidId()
 
         if (RecipeDAO.deleteRecipe(id)) {
+            // Notificar a los clientes sobre la eliminación
+            recipeBroadcaster.broadcast(
+                "recipe_update",
+                Json.encodeToString(
+                    mapOf(
+                        "type" to "delete",
+                        "recipeId" to id
+                    )
+                )
+            )
             call.respond(HttpStatusCode.OK, "Receta eliminada correctamente")
         } else {
             call.respondNotFound("Receta")

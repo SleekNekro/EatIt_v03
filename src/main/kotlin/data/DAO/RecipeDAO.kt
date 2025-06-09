@@ -20,6 +20,13 @@ class RecipeDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<Rec
                 this.createdAt = System.currentTimeMillis()
             } }
         }
+        fun findByName(name: String): List<RecipeDAO> {
+            return transaction {
+                RecipeDAO.find { Recipes.title like "%${name.trim()}%" }
+                    .toList()
+            }
+        }
+
 
         fun updateRecipe(id: Long, newTitle: String? = null, newDescription: String? = null, newServings: Int? = null, newImageUrl: String? = null): Boolean {
             return transaction {

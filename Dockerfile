@@ -1,17 +1,5 @@
-FROM openjdk:17-jdk-slim
+FROM amazoncorretto:21-alpine-jdk
 
-WORKDIR /src
-COPY . /src
+COPY build/libs/EatIt_v03.jar app.jar
 
-RUN apt-get update
-RUN apt-get install -y dos2unix
-RUN dos2unix gradlew
-
-RUN bash gradlew fatJar
-
-WORKDIR /run
-RUN cp /src/build/libs/*.jar /run/server.jar
-
-EXPOSE 8085
-
-CMD java -jar /run/server.jar
+ENTRYPOINT ["java", "-jar", "./app.jar"]

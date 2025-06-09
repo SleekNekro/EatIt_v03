@@ -26,7 +26,7 @@ class CommentDAO(id: EntityID<Long>) : LongEntity(id), ConvertibleToDataClass<Co
         }
 
         // Obtener comentarios de una receta específica
-        fun getCommentsByRecipeId(recipeId: Long): List<CommentDAO> {
+        fun getRecipeComments(recipeId: Long): List<CommentDAO> {
             return transaction {
                 CommentDAO.find { Comments.recipeId eq recipeId }.toList()
             }

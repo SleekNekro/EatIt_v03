@@ -9,3 +9,4 @@ data class LikeData(
     val recipeId: Long,
     val createdAt: Long
 )
+

@@ -19,7 +19,7 @@ fun Application.configureRouting() {
             configureAuthRoutes(jwtConfig)
         }
         
-        authenticate("auth-jwt") {
+        //authenticate("auth-jwt") {
             route("/user") { configureUserRoutes() }
             route("/recipe") { configureRecipeRoutes() }
             route("/comment") { configureCommentRoutes() }
@@ -28,7 +28,7 @@ fun Application.configureRouting() {
             configureImageRoutes()
             configureFollowerRoutes()
 
-        }
+        //}
         environment.log.info("Rutas registradas en el servidor:")
         application.environment.log.info(application.attributes.toString())
     }
