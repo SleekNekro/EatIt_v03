@@ -21,7 +21,7 @@ fun startSseHeartbeat() {
     println("🚀 `startSseHeartbeat()` se ha ejecutado!")  // 🔥 Log de inicio
     GlobalScope.launch {
         while (true) {
-            println("🔍 Intentando enviar evento SSE")
+            //println("🔍 Intentando enviar evento SSE")
             recipeBroadcaster.broadcast("keep_alive", "{\"message\": \"Ping SSE\"}")
             delay(5000)
         }

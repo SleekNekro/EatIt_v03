@@ -48,7 +48,7 @@ class SseBroadcaster {
 
 
     suspend fun broadcast(event: String, data: String) {
-        println("🔍 Enviando evento SSE: event=$event, data=$data")  // 🔥 Log en el servidor
+        //println("🔍 Enviando evento SSE: event=$event, data=$data")  // 🔥 Log en el servidor
         //println("🔍 Clientes SSE conectados: ${clients.size}")  // 🔥 Verificar clientes antes de enviar eventos
         mutex.withLock {
             clients.forEach { call ->
