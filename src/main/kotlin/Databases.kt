@@ -11,4 +11,5 @@ fun Application.configureDatabases() {
         user = System.getenv("DATABASE_USER"),
         password = System.getenv("DATABASE_PASSWORD")
     )
+    println("$database".toString())
 }
