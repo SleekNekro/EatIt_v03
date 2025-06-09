@@ -32,6 +32,7 @@ fun main(args: Array<String>) {
 fun Application.module() {
     println("🚀 Servidor Ktor iniciado!")
     startSseHeartbeat()
+
     install(ContentNegotiation) {
         json(Json {
             prettyPrint = true
@@ -39,7 +40,6 @@ fun Application.module() {
         })
     }
     install(SSE)
-
     install(CallLogging) {
         level = Level.DEBUG
     }
