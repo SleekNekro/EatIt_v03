@@ -1,6 +1,7 @@
 package com.github.SleekNekro.routes
 
 import com.github.SleekNekro.data.DAO.RecipeDAO
+import com.github.SleekNekro.model.request.RecipeEvent
 import com.github.SleekNekro.model.request.RecipeRequest
 import com.github.SleekNekro.model.request.UpdateRecipeRequest
 import com.github.SleekNekro.util.SseBroadcaster
@@ -95,9 +96,8 @@ fun Route.configureRecipeRoutes() {
         recipeBroadcaster.broadcast(
             "recipe_update",
             Json.encodeToString(
-                mapOf(
-                    "type" to "create",
-                    "recipe" to newRecipe.toDataClass()
+                RecipeEvent.serializer(), RecipeEvent(
+                    "create",newRecipe.toDataClass()
                 )
             )
 

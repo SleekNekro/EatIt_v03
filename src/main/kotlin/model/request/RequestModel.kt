@@ -1,5 +1,6 @@
 package com.github.SleekNekro.model.request
 
+import com.github.SleekNekro.data.clases.RecipeData
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,6 +16,11 @@ data class RegisterRequest(
     val email: String,
 )
 
+@Serializable
+data class RecipeEvent(
+    val type: String,
+    val recipe: RecipeData
+)
 
 @Serializable
 data class RecipeRequest(
