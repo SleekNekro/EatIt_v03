@@ -25,10 +25,9 @@ fun Application.configureRouting() {
             route("/comment") { configureCommentRoutes() }
             route("/like") { configureLikeRoutes() }
             route("/ingredient") { configureIngredientRoutes() }
-            configureImageRoutes()
             configureFollowerRoutes()
-
         }
+        configureImageRoutes()
         environment.log.info("Rutas registradas en el servidor:")
         application.environment.log.info(application.attributes.toString())
     }
