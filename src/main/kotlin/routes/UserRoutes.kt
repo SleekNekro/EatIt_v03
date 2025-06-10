@@ -3,7 +3,11 @@ package com.github.SleekNekro.routes
 import com.github.SleekNekro.data.DAO.UserDAO
 import com.github.SleekNekro.model.request.UpdateUserRequest
 import com.github.SleekNekro.model.request.FollowerRequest
+import com.github.SleekNekro.util.FileStorageService
 import io.ktor.http.*
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
+import io.ktor.http.content.streamProvider
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -60,30 +64,60 @@ fun Route.configureUserRoutes() {
             }
         }
 
-        patch("/{id}") {
-            try {
-                val id = call.parameters["id"]?.toLongOrNull()
-                    ?: return@patch call.respondInvalidId()
-                
-                val updateRequest = call.receive<UpdateUserRequest>()
+    patch("/{id}") {
+        try {
+            val id = call.parameters["id"]?.toLongOrNull()
+                ?: return@patch call.respondInvalidId()
 
-                val updated = UserDAO.updateUser(
-                    id = id,
-                    newUsername = updateRequest.username,
-                    newEmail = updateRequest.email,
-                    newPassword = updateRequest.password,
-                    newProfilePic = updateRequest.profilePic
-                )
+            // Procesamos el multipart para extraer los parámetros de texto e imagen
+            val multipart = call.receiveMultipart()
+            var username: String? = null
+            var email: String? = null
+            var password: String? = null
+            var profilePicUrl: String? = null
 
-                if (updated) {
-                    call.respond(HttpStatusCode.OK, "Usuario actualizado correctamente")
-                } else {
-                    call.respondNotFound("Usuario")
+            multipart.forEachPart { part ->
+                when (part) {
+                    is PartData.FormItem -> {
+                        when (part.name) {
+                            "username" -> username = part.value
+                            "email" -> email = part.value
+                            "password" -> password = part.value
+                        }
+                    }
+
+                    is PartData.FileItem -> {
+                        if (part.name == "profilePic") {
+                            val fileBytes = part.streamProvider().readBytes()
+                            val filename = "profile_${id}.jpg"
+
+                            // Almacena el archivo y obtén la URL donde estará accesible
+                            profilePicUrl = FileStorageService.saveFile(filename, fileBytes)
+                        }
+                    }
+
+                    else -> {}
                 }
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, "Error al actualizar usuario: ${e.message}")
+                part.dispose()
             }
+
+            val updated = UserDAO.updateUser(
+                id = id,
+                newUsername = username,
+                newEmail = email,
+                newPassword = password,
+                newProfilePic = profilePicUrl
+            )
+
+            if (updated) {
+                call.respond(HttpStatusCode.OK, "Usuario actualizado correctamente")
+            } else {
+                call.respondNotFound("Usuario")
+            }
+        }finally {
+
         }
+    }
 
         delete("/{id}") {
             try {
