@@ -8,39 +8,81 @@ import com.github.SleekNekro.security.hashPassword
 import com.github.SleekNekro.security.verifyPassword
 import com.github.SleekNekro.util.*
 import io.ktor.http.*
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
+import io.ktor.http.content.streamProvider
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import java.io.File
+import java.util.UUID
 
 fun Route.configureAuthRoutes(jwtConfig: JwtConfig) {
     post("/register") {
-        val registerRequest = call.receive<RegisterRequest>()
-        
-        if (!registerRequest.email.contains("@")) {
-            call.respondInvalidFormat("email")
-            return@post
+        try {
+            val multipart = call.receiveMultipart()
+            var username: String? = null
+            var email: String? = null
+            var password: String? = null
+            var profilePicUrl: String? = null
+
+            multipart.forEachPart { part ->
+                when (part) {
+                    is PartData.FormItem -> {
+                        when (part.name) {
+                            "username" -> username = part.value
+                            "email" -> email = part.value
+                            "password" -> password = part.value
+                        }
+                    }
+                    is PartData.FileItem -> {
+                        if (part.name == "profilePic") {
+                            val fileBytes = part.streamProvider().readBytes()
+                            val fileName = "uploads/profile_${UUID.randomUUID()}.jpg"
+                            File(fileName).writeBytes(fileBytes)
+
+                            // URL accesible
+                            profilePicUrl = "https://eatitv03-production.up.railway.app/$fileName"
+                        }
+                    }
+                    else -> {}
+                }
+                part.dispose()
+            }
+
+            // Validaciones
+            if (email == null || !email.contains("@")) {
+                call.respondInvalidFormat("email")
+                return@post
+            }
+
+            if (password == null || password.length < 6) {
+                call.respond(HttpStatusCode.BadRequest, "La contraseña debe tener al menos 6 caracteres")
+                return@post
+            }
+
+            if (UserDAO.getUserByEmail(email) != null) {
+                call.respond(HttpStatusCode.Conflict, "$email ya está en uso")
+                return@post
+            }
+
+            val hashedPassword = hashPassword(password)
+
+            val userId = UserDAO.createUser(username!!, email!!, hashedPassword, profilePicUrl ?: "")
+
+            // **Usamos RegisterResponse**
+            call.respond(HttpStatusCode.Created, RegisterResponse(
+                user = userId.toDataClass(),
+                profilePicUrl = profilePicUrl ?: "",
+                message = "$username registrado correctamente"
+            ))
+
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.InternalServerError, "Error al registrar usuario: ${e.message}")
         }
-
-        if (registerRequest.password.length < 6) {
-            call.respond(HttpStatusCode.BadRequest, "La contraseña debe tener al menos 6 caracteres")
-            return@post
-        }
-
-        if (UserDAO.getUserByEmail(registerRequest.email) != null) {
-            call.respond(HttpStatusCode.Conflict, "${registerRequest.email} ya está en uso")
-            return@post
-        }
-
-        val hashedPassword = hashPassword(registerRequest.password)
-        val user = UserDAO.createUser(
-            username = registerRequest.username,
-            email = registerRequest.email,
-            password = hashedPassword,
-            profilePic = null
-        )
-
-        call.respond(HttpStatusCode.Created, mapOf("message" to "${user.username} registrado correctamente"))
     }
+
+
 
     post("/login") {
         try {

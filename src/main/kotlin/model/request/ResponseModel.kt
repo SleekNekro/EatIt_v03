@@ -1,5 +1,6 @@
 package com.github.SleekNekro.model.request
 
+import com.github.SleekNekro.data.DAO.UserDAO
 import com.github.SleekNekro.data.clases.UserData
 import kotlinx.serialization.Serializable
 
@@ -9,6 +10,14 @@ data class LoginResponse(
     val token: String,
     val user: UserResponse
 )
+
+@Serializable
+data class RegisterResponse(
+    val user: UserData,
+    val profilePicUrl: String,
+    val message: String
+)
+
 @Serializable
 data class ImageUploadResponse(
     val url: String
