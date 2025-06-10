@@ -19,6 +19,7 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload
 import java.io.File
 import java.util.UUID
 
+@Suppress("DEPRECATION")
 fun Route.configureImageRoutes() {
     val uploadDir = File("uploads").apply { mkdirs() }
 
@@ -39,7 +40,9 @@ fun Route.configureImageRoutes() {
                                 input.copyTo(output)
                             }
                         }
-
+                        println("Imagen guardada correctamente en: ${file.absolutePath}")
+                        val files = uploadDir.listFiles()
+                        files?.forEach { println("Archivo guardado: ${it.name}") }
                         call.respond(hashMapOf("location" to "/uploads/$fileName"))
                     }
                     else -> {}
