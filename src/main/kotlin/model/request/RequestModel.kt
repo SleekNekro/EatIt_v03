@@ -40,6 +40,10 @@ data class UpdateRecipeRequest(
 )
 
 @Serializable
+data class RecipeDeleteEvent(val type: String, val recipeId: Long)
+
+
+@Serializable
 data class CommentRequest(
     val userId: Long,
     val recipeId: Long,

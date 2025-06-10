@@ -1,6 +1,7 @@
 package com.github.SleekNekro.routes
 
 import com.github.SleekNekro.data.DAO.RecipeDAO
+import com.github.SleekNekro.model.request.RecipeDeleteEvent
 import com.github.SleekNekro.model.request.RecipeEvent
 import com.github.SleekNekro.model.request.RecipeRequest
 import com.github.SleekNekro.model.request.UpdateRecipeRequest
@@ -143,16 +144,9 @@ fun Route.configureRecipeRoutes() {
             ?: return@delete call.respondInvalidId()
 
         if (RecipeDAO.deleteRecipe(id)) {
-            // Notificar a los clientes sobre la eliminación
-            recipeBroadcaster.broadcast(
-                "recipe_update",
-                Json.encodeToString(
-                    mapOf(
-                        "type" to "delete",
-                        "recipeId" to id
-                    )
-                )
-            )
+            val deleteEvent = RecipeDeleteEvent(type = "delete", recipeId = id)
+            recipeBroadcaster.broadcast("recipe_update", Json.encodeToString(deleteEvent))
+
             call.respond(HttpStatusCode.OK, "Receta eliminada correctamente")
         } else {
             call.respondNotFound("Receta")
