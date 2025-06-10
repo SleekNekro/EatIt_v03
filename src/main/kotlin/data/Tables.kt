@@ -42,7 +42,6 @@ object Likes : LongIdTable("likes") {
     val createdAt = long("created_at")
 }
 
-// Tables.kt
 object Followers : Table() {
     val id = long("id").autoIncrement()
     val userId = long("user_id").references(Users.id)

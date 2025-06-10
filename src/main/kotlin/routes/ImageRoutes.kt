@@ -51,9 +51,9 @@ fun Route.configureImageRoutes() {
                 part.dispose()
             }
         } catch (e: Exception) {
-            // Loguea el error para información adicional
+
             println("Error al cargar la imagen: ${e.message}")
-            // Si el canal ya se cerró, podrías simplemente finalizar sin lanzar más excepciones
+
             call.respondText("Error interno", status = HttpStatusCode.InternalServerError)
         }
     }
