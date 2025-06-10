@@ -43,7 +43,8 @@ fun Route.configureImageRoutes() {
                         println("Imagen guardada correctamente en: ${file.absolutePath}")
                         val files = uploadDir.listFiles()
                         files?.forEach { println("Archivo guardado: ${it.name}") }
-                        call.respond(hashMapOf("location" to "/uploads/$fileName"))
+                        val imageUrl = "https://eatitv03-production.up.railway.app/uploads/$fileName"
+                        call.respond(hashMapOf("location" to imageUrl))
                     }
                     else -> {}
                 }
