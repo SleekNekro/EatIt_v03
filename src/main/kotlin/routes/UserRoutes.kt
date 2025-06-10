@@ -12,6 +12,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import java.io.File
 
 // Funciones de extensión de utilidad
 suspend fun ApplicationCall.respondInvalidId() {
@@ -90,9 +91,9 @@ fun Route.configureUserRoutes() {
                         if (part.name == "profilePic") {
                             val fileBytes = part.streamProvider().readBytes()
                             val filename = "profile_${id}.jpg"
-
+                            File(filename).writeBytes(fileBytes)
                             // Almacena el archivo y obtén la URL donde estará accesible
-                            profilePicUrl = FileStorageService.saveFile(filename, fileBytes)
+                            profilePicUrl = "/$filename"
                         }
                     }
 
